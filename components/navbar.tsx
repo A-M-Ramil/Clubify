@@ -8,7 +8,7 @@ const App = () => {
     {
       label: "About",
       bgColor: "#1a1a1a",
-      textColor: "#fff",
+      textColor: "#cacaca",
       links: [
         {
           label: "Company",
@@ -25,7 +25,7 @@ const App = () => {
     {
       label: "Projects",
       bgColor: "#2a2a2a",
-      textColor: "#fff",
+      textColor: "#cacaca",
       links: [
         {
           label: "Featured",
@@ -42,7 +42,7 @@ const App = () => {
     {
       label: "Contact",
       bgColor: "#3a3a3a",
-      textColor: "#fff",
+      textColor: "#cacaca",
       links: [
         {
           label: "Email",
@@ -71,7 +71,7 @@ const App = () => {
       baseColor="#0a0a0a"
       menuColor="#4a4a4a"
       buttonBgColor="#1a1a1a"
-      buttonTextColor="#fff"
+      buttonTextColor="#cacaca"
       ease="elastic.out(1,.8)"
     />
   );
