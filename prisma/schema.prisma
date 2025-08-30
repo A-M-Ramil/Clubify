@@ -46,6 +46,11 @@ model Club {
   description String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  approved Boolean         @default(false)
+  contactEmail String?
+  website String?
+  coverImage String?
+  
 
   // Relations
   members     Membership[]

@@ -1,23 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Label } from "@/components/UI/label";
 import { Input } from "@/components/UI/input";
 import { cn } from "@/lib/utils";
 import { IconUpload, IconPlus, IconTrash } from "@tabler/icons-react";
 import { useUser, SignInButton, SignUpButton } from "@clerk/nextjs";
 
-/**
- * Full-page Club Registration form
- *
- * - Background: #0a0a0a
- * - Uses your Input & Label components
- * - Only signed-in users can submit (SignIn / SignUp CTAs shown otherwise)
- * - Submits to /api/clubs as JSON; replace or wire to your API as needed
- */
-
 export default function CreateClubPage() {
   const { isLoaded, isSignedIn, user } = useUser();
+  const router = useRouter();
 
   // form
   const [name, setName] = useState("");
@@ -73,15 +66,33 @@ export default function CreateClubPage() {
     return Object.keys(e).length === 0;
   };
 
-  // Submit handler: posts JSON to /api/clubs (adjust endpoint later)
+  // Reset form
+  const resetForm = () => {
+    setName("");
+    setUniversity("");
+    setDescription("");
+    setContactEmail("");
+    setWebsite("");
+    setDepartments([]);
+    setNewDept("");
+    setCoverFile(null);
+    setCoverPreview(null);
+    setErrors({});
+    setSuccessMessage(null);
+  };
+
+  // Submit handler: posts JSON to /api/clubs
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setSuccessMessage(null);
+
     if (!isLoaded) return;
+
     if (!isSignedIn) {
       setErrors({ form: "You must be signed in to create a club." });
       return;
     }
+
     if (!validate()) return;
 
     setLoading(true);
@@ -89,51 +100,62 @@ export default function CreateClubPage() {
 
     try {
       // Build payload
-      const payload: any = {
+      const payload = {
         name: name.trim(),
         university: university.trim(),
-        description: description.trim() || null,
-        contactEmail: contactEmail.trim() || null,
-        website: website.trim() || null,
+        description: description.trim() || undefined,
+        contactEmail: contactEmail.trim() || undefined,
+        website: website.trim() || undefined,
         departments,
-        createdBy: user?.id, // clerk user id (store as authUserId in DB)
+        createdBy: user.id,
+        hasCover: Boolean(coverFile),
       };
 
-      // If you want to actually upload the cover, implement multipart upload / S3 logic in your API.
-      // For now we send a flag whether a cover was provided and skip binary upload.
-      payload.hasCover = Boolean(coverFile);
-
-      // send to your API (implement server side with Prisma)
       const res = await fetch("/api/clubs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Failed to create club");
+        throw new Error(data.error || "Failed to create club");
       }
 
-      const json = await res.json();
+      setSuccessMessage(`Club "${data.club.name}" created successfully!`);
 
-      setSuccessMessage("Club created successfully.");
-      // Optionally redirect to the created club page:
-      // router.push(`/clubs/${json.id}`);
-      // For now reset form:
-      setName("");
-      setUniversity("");
-      setDescription("");
-      setContactEmail("");
-      setWebsite("");
-      setDepartments([]);
-      setCoverFile(null);
-      setCoverPreview(null);
+      // Optional: Redirect to the club page after a delay
+      setTimeout(() => {
+        router.push(`/clubs/${data.club.id}`);
+      }, 2000);
     } catch (err: any) {
-      console.error(err);
-      setErrors({ form: err?.message ?? String(err) });
+      console.error("Club creation error:", err);
+
+      // Handle specific error types
+      if (err.message.includes("already exists")) {
+        setErrors({
+          name: "A club with this name already exists at this university",
+        });
+      } else if (err.message.includes("Validation failed")) {
+        setErrors({
+          form: "Please check your input and try again",
+        });
+      } else {
+        setErrors({
+          form: err.message || "Something went wrong. Please try again.",
+        });
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle Enter key on department input
+  const handleDeptKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addDept();
     }
   };
 
@@ -196,6 +218,7 @@ export default function CreateClubPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Innovators Club"
+                  disabled={loading}
                 />
                 {errors.name && (
                   <div className="mt-1 text-sm text-red-400">{errors.name}</div>
@@ -209,6 +232,7 @@ export default function CreateClubPage() {
                   value={university}
                   onChange={(e) => setUniversity(e.target.value)}
                   placeholder="e.g. Example University"
+                  disabled={loading}
                 />
                 {errors.university && (
                   <div className="mt-1 text-sm text-red-400">
@@ -219,14 +243,14 @@ export default function CreateClubPage() {
 
               <div>
                 <Label htmlFor="description">Short description</Label>
-                {/* Input component is for simple inputs; use a textarea styled similarly */}
                 <textarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="mt-1 w-full rounded border bg-transparent px-3 py-2 text-neutral-100 placeholder:text-neutral-500"
+                  className="mt-1 w-full rounded border bg-transparent px-3 py-2 text-neutral-100 placeholder:text-neutral-500 disabled:opacity-50"
                   placeholder="Describe your club in 1-2 sentences"
                   rows={4}
+                  disabled={loading}
                 />
               </div>
 
@@ -238,6 +262,7 @@ export default function CreateClubPage() {
                   onChange={(e) => setContactEmail(e.target.value)}
                   placeholder="organizer@example.edu"
                   type="email"
+                  disabled={loading}
                 />
                 {errors.contactEmail && (
                   <div className="mt-1 text-sm text-red-400">
@@ -253,6 +278,7 @@ export default function CreateClubPage() {
                   value={website}
                   onChange={(e) => setWebsite(e.target.value)}
                   placeholder="https://..."
+                  disabled={loading}
                 />
                 {errors.website && (
                   <div className="mt-1 text-sm text-red-400">
@@ -268,13 +294,16 @@ export default function CreateClubPage() {
                   <input
                     value={newDept}
                     onChange={(e) => setNewDept(e.target.value)}
+                    onKeyDown={handleDeptKeyDown}
                     placeholder="e.g. Tech Team"
-                    className="mt-1 w-full rounded border bg-transparent px-3 py-2 text-neutral-100 placeholder:text-neutral-500"
+                    className="mt-1 w-full rounded border bg-transparent px-3 py-2 text-neutral-100 placeholder:text-neutral-500 disabled:opacity-50"
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={addDept}
-                    className="inline-flex items-center gap-2 rounded bg-emerald-600 px-3 py-2 text-sm text-white hover:opacity-90"
+                    disabled={loading}
+                    className="inline-flex items-center gap-2 rounded bg-emerald-600 px-3 py-2 text-sm text-white hover:opacity-90 disabled:opacity-50"
                   >
                     <IconPlus className="h-4 w-4" /> Add
                   </button>
@@ -290,7 +319,8 @@ export default function CreateClubPage() {
                       <button
                         type="button"
                         onClick={() => removeDept(d)}
-                        className="rounded p-1 hover:bg-white/5"
+                        disabled={loading}
+                        className="rounded p-1 hover:bg-white/5 disabled:opacity-50"
                       >
                         <IconTrash className="h-3 w-3" />
                       </button>
@@ -305,7 +335,12 @@ export default function CreateClubPage() {
               <div>
                 <Label>Club cover (optional)</Label>
                 <div className="mt-1 flex flex-col gap-2">
-                  <label className="relative cursor-pointer rounded border border-dashed border-neutral-700 px-4 py-6 text-center">
+                  <label
+                    className={cn(
+                      "relative cursor-pointer rounded border border-dashed border-neutral-700 px-4 py-6 text-center",
+                      loading && "pointer-events-none opacity-50"
+                    )}
+                  >
                     <input
                       type="file"
                       accept="image/*"
@@ -314,6 +349,7 @@ export default function CreateClubPage() {
                         const f = ev.target.files?.[0] ?? null;
                         onCoverChange(f);
                       }}
+                      disabled={loading}
                     />
                     <div className="mx-auto flex w-full max-w-[200px] flex-col items-center justify-center gap-2">
                       <IconUpload className="h-6 w-6 text-neutral-400" />
@@ -337,12 +373,13 @@ export default function CreateClubPage() {
                             setCoverFile(null);
                             setCoverPreview(null);
                           }}
-                          className="rounded border px-3 py-1 text-sm"
+                          disabled={loading}
+                          className="rounded border px-3 py-1 text-sm disabled:opacity-50"
                         >
                           Remove
                         </button>
                         <div className="text-sm text-neutral-400">
-                          Preview only (upload in API)
+                          Preview only
                         </div>
                       </div>
                     </div>
@@ -371,13 +408,12 @@ export default function CreateClubPage() {
               <div className="mt-4 flex flex-col gap-2">
                 <button
                   type="submit"
-                  onClick={handleSubmit}
-                  disabled={loading || !isSignedIn}
+                  disabled={loading || !isSignedIn || !isLoaded}
                   className={cn(
-                    "flex w-full items-center justify-center gap-2 rounded px-4 py-2 text-sm font-medium",
-                    loading
-                      ? "opacity-60"
-                      : "bg-gradient-to-r from-sky-500 to-indigo-600 text-white hover:scale-[1.01]"
+                    "flex w-full items-center justify-center gap-2 rounded px-4 py-2 text-sm font-medium transition-all",
+                    loading || !isSignedIn || !isLoaded
+                      ? "cursor-not-allowed bg-neutral-800 text-neutral-400"
+                      : "bg-gradient-to-r from-sky-500 to-indigo-600 text-white hover:scale-[1.01] hover:shadow-lg"
                   )}
                 >
                   {loading ? "Creating..." : "Create Club"}
@@ -385,27 +421,19 @@ export default function CreateClubPage() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    // reset
-                    setName("");
-                    setUniversity("");
-                    setDescription("");
-                    setContactEmail("");
-                    setWebsite("");
-                    setDepartments([]);
-                    setCoverFile(null);
-                    setCoverPreview(null);
-                    setErrors({});
-                    setSuccessMessage(null);
-                  }}
-                  className="w-full rounded border px-4 py-2 text-sm text-white/80"
+                  onClick={resetForm}
+                  disabled={loading}
+                  className="w-full rounded border border-neutral-700 px-4 py-2 text-sm text-white/80 hover:bg-white/5 disabled:opacity-50"
                 >
                   Reset
                 </button>
 
                 {successMessage && (
-                  <div className="mt-2 rounded bg-emerald-700/10 p-2 text-sm text-emerald-200">
+                  <div className="mt-2 rounded bg-emerald-700/10 border border-emerald-600/20 p-3 text-sm text-emerald-200">
                     {successMessage}
+                    <div className="mt-1 text-xs text-emerald-300/80">
+                      Redirecting to club page...
+                    </div>
                   </div>
                 )}
               </div>
