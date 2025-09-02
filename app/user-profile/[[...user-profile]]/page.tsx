@@ -12,6 +12,8 @@ import {
   Edit3,
   Save,
   X,
+  GraduationCap,
+  MapPin,
 } from "lucide-react";
 
 export default function UserProfilePage() {
@@ -20,15 +22,19 @@ export default function UserProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [universities, setUniversities] = useState([]);
   const [editForm, setEditForm] = useState({
     name: "",
     email: "",
+    university: "",
   });
+  const [message, setMessage] = useState(null);
 
   // Fetch user profile data from your database
   useEffect(() => {
     if (isLoaded && user) {
       fetchUserProfile();
+      fetchUniversities();
     }
   }, [isLoaded, user]);
 
@@ -41,6 +47,7 @@ export default function UserProfilePage() {
         setEditForm({
           name: data.user.name || "",
           email: data.user.email || "",
+          university: data.user.university || "",
         });
       }
     } catch (error) {
@@ -50,8 +57,22 @@ export default function UserProfilePage() {
     }
   };
 
+  const fetchUniversities = async () => {
+    try {
+      const response = await fetch("/api/user/profile", { method: "OPTIONS" });
+      if (response.ok) {
+        const data = await response.json();
+        setUniversities(data.universities || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch universities:", error);
+    }
+  };
+
   const handleSaveProfile = async () => {
     setSaving(true);
+    setMessage(null);
+
     try {
       const response = await fetch("/api/user/profile", {
         method: "PUT",
@@ -59,21 +80,46 @@ export default function UserProfilePage() {
         body: JSON.stringify(editForm),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
         setUserProfile(data.user);
         setIsEditing(false);
+        setMessage({
+          type: "success",
+          text: data.message || "Profile updated successfully!",
+        });
+      } else {
+        setMessage({
+          type: "error",
+          text: data.error || "Failed to update profile",
+        });
       }
     } catch (error) {
       console.error("Failed to update profile:", error);
+      setMessage({
+        type: "error",
+        text: "Failed to update profile. Please try again.",
+      });
     } finally {
       setSaving(false);
     }
   };
 
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setMessage(null);
+    // Reset form to original values
+    setEditForm({
+      name: userProfile?.name || "",
+      email: userProfile?.email || "",
+      university: userProfile?.university || "",
+    });
+  };
+
   if (!isLoaded || loading) {
     return (
-      <div className="min-h-screen bg-primary  flex items-center justify-center">
+      <div className="min-h-screen bg-primary flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-900"></div>
       </div>
     );
@@ -92,8 +138,23 @@ export default function UserProfilePage() {
   return (
     <div className="min-h-screen bg-primary">
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Message Display */}
+        {message && (
+          <div className="mb-6">
+            <div
+              className={`p-4 rounded-lg border ${
+                message.type === "success"
+                  ? "bg-green-900/50 border-green-500/50 text-green-300"
+                  : "bg-red-900/50 border-red-500/50 text-red-300"
+              }`}
+            >
+              {message.text}
+            </div>
+          </div>
+        )}
+
         {/* Header */}
-        <div className=" backdrop-blur-sm rounded-2xl border border-gray-700/50 p-8 mb-8">
+        <div className="backdrop-blur-sm rounded-2xl border border-gray-700/50 p-8 mb-8">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-6">
               <div className="relative group">
@@ -138,6 +199,26 @@ export default function UserProfilePage() {
                       placeholder="Your email"
                       type="email"
                     />
+                    <div className="relative">
+                      <input
+                        value={editForm.university}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            university: e.target.value,
+                          })
+                        }
+                        list="universities"
+                        className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-gray-300 w-64"
+                        placeholder="Your university"
+                      />
+                      <datalist id="universities">
+                        {universities.map((uni) => (
+                          <option key={uni} value={uni} />
+                        ))}
+                      </datalist>
+                      <GraduationCap className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
                 ) : (
                   <div className="flex flex-col">
@@ -149,6 +230,12 @@ export default function UserProfilePage() {
                       {userProfile?.email ||
                         user.primaryEmailAddress?.emailAddress}
                     </p>
+                    {userProfile?.university && (
+                      <p className="text-gray-300 flex items-center mt-1">
+                        <GraduationCap className="w-4 h-4 mr-2" />
+                        {userProfile.university}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -180,15 +267,21 @@ export default function UserProfilePage() {
                 <>
                   <button
                     onClick={handleSaveProfile}
-                    disabled={saving}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors disabled:opacity-50"
+                    disabled={
+                      saving ||
+                      !editForm.name ||
+                      !editForm.email ||
+                      !editForm.university
+                    }
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Save className="w-4 h-4" />
                     <span>{saving ? "Saving..." : "Save"}</span>
                   </button>
                   <button
-                    onClick={() => setIsEditing(false)}
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+                    onClick={handleCancelEdit}
+                    disabled={saving}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors disabled:opacity-50"
                   >
                     <X className="w-4 h-4" />
                     <span>Cancel</span>
@@ -217,11 +310,30 @@ export default function UserProfilePage() {
               </SignOutButton>
             </div>
           </div>
+
+          {/* University Missing Warning */}
+          {!userProfile?.university && !isEditing && (
+            <div className="mt-6 p-4 bg-yellow-900/50 border border-yellow-500/50 rounded-lg">
+              <div className="flex items-center">
+                <GraduationCap className="w-5 h-5 text-yellow-400 mr-2" />
+                <p className="text-yellow-300">
+                  Please add your university to join clubs and access full
+                  features.
+                </p>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="ml-auto bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                >
+                  Add University
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className=" backdrop-blur-sm rounded-xl border border-gray-700/50 p-6">
+          <div className="backdrop-blur-sm rounded-xl border border-gray-700/50 p-6">
             <div className="flex items-center space-x-3">
               <Users className="w-8 h-8 text-blue-400" />
               <div>
@@ -270,6 +382,44 @@ export default function UserProfilePage() {
           </div>
         </div>
 
+        {/* Quick Actions */}
+        {userProfile?.university && (
+          <div className="mb-8 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+              <MapPin className="w-5 h-5 mr-2 text-indigo-400" />
+              Quick Actions
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <a
+                href="/welcome/join-a-club"
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white p-4 rounded-lg transition-all duration-200 text-center group"
+              >
+                <Users className="w-6 h-6 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                <p className="font-medium">Join New Clubs</p>
+                <p className="text-sm opacity-80">
+                  Discover clubs at {userProfile.university}
+                </p>
+              </a>
+              <a
+                href="/dashboard/create-club"
+                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white p-4 rounded-lg transition-all duration-200 text-center group"
+              >
+                <Award className="w-6 h-6 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                <p className="font-medium">Create Club</p>
+                <p className="text-sm opacity-80">Start your own club</p>
+              </a>
+              <a
+                href="/dashboard/joinedclubs"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white p-4 rounded-lg transition-all duration-200 text-center group"
+              >
+                <Calendar className="w-6 h-6 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                <p className="font-medium">My Dashboard</p>
+                <p className="text-sm opacity-80">Manage your clubs</p>
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Clubs Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* My Clubs */}
@@ -314,9 +464,17 @@ export default function UserProfilePage() {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-400 text-center py-8">
-                  No clubs joined yet
-                </p>
+                <div className="text-center py-8">
+                  <p className="text-gray-400 mb-4">No clubs joined yet</p>
+                  {userProfile?.university && (
+                    <a
+                      href="/welcome/join-a-club"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors inline-block"
+                    >
+                      Join Your First Club
+                    </a>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -332,7 +490,7 @@ export default function UserProfilePage() {
                 userProfile.clubs.map((club) => (
                   <div
                     key={club.id}
-                    className="bg-secondary/50  rounded-lg p-4 hover:bg-secondary transition-colors"
+                    className="bg-secondary/50 rounded-lg p-4 hover:bg-secondary transition-colors"
                   >
                     <div className="flex justify-between items-start">
                       <div>
@@ -365,9 +523,12 @@ export default function UserProfilePage() {
               ) : (
                 <div className="text-center py-8">
                   <p className="text-gray-400 mb-4">No clubs administered</p>
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                  <a
+                    href="/dashboard/create-club"
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors inline-block"
+                  >
                     Create Club
-                  </button>
+                  </a>
                 </div>
               )}
             </div>
@@ -385,7 +546,7 @@ export default function UserProfilePage() {
               userProfile.rsvps.slice(0, 5).map((rsvp) => (
                 <div
                   key={rsvp.id}
-                  className="flex items-center justify-between bg-secondary/50  rounded-lg p-3"
+                  className="flex items-center justify-between bg-secondary/50 rounded-lg p-3"
                 >
                   <div>
                     <p className="text-white font-medium">{rsvp.event.title}</p>
@@ -422,7 +583,7 @@ export default function UserProfilePage() {
               Sponsor Profile
             </h2>
             {userProfile.sponsorProfile ? (
-              <div className="bg-secondary/50  rounded-lg p-4">
+              <div className="bg-secondary/50 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-white">
                   {userProfile.sponsorProfile.companyName}
                 </h3>
