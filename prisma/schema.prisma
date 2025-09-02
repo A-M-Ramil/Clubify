@@ -18,6 +18,7 @@ model User {
   globalRole    GlobalRole    @default(MEMBER)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  university    String?       
 
   // Relations
   memberships     Membership[]

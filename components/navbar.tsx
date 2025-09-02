@@ -1,41 +1,41 @@
 "use client";
 
 import CardNav from "./UI/ui_nav";
-import logo from "../public/vercel.svg";
+import logo from "../public/W.png";
 
 const App = () => {
   const items = [
     {
-      label: "About",
+      label: "Dashboard",
       bgColor: "#1a1a1a",
       textColor: "#cacaca",
       links: [
         {
-          label: "Company",
-          href: "/about/company",
-          ariaLabel: "About Company",
+          label: "Dashboard Panel",
+          href: "/dashboard",
+          ariaLabel: "Dashboard Panel",
         },
         {
-          label: "Careers",
-          href: "/about/careers",
-          ariaLabel: "About Careers",
+          label: "Joined Clubs",
+          href: "/dashboard/joinedclubs",
+          ariaLabel: "Joined Clubs",
         },
       ],
     },
     {
-      label: "Projects",
+      label: "Club",
       bgColor: "#2a2a2a",
       textColor: "#cacaca",
       links: [
         {
-          label: "Featured",
-          href: "/projects/featured",
-          ariaLabel: "Featured Projects",
+          label: "Create Club",
+          href: "/welcome/create-club",
+          ariaLabel: "Create Club",
         },
         {
-          label: "Case Studies",
-          href: "/projects/case-studies",
-          ariaLabel: "Project Case Studies",
+          label: "Join Club",
+          href: "/welcome/join-a-club",
+          ariaLabel: "Join Club",
         },
       ],
     },
@@ -65,10 +65,9 @@ const App = () => {
 
   return (
     <CardNav
-      logo={logo}
       logoAlt="Company Logo"
       items={items}
-      baseColor="#0a0a0a"
+      baseColor="#000"
       menuColor="#4a4a4a"
       buttonBgColor="#1a1a1a"
       buttonTextColor="#cacaca"

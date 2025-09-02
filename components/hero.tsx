@@ -28,10 +28,10 @@ export default function Hero() {
         </p>
         <div className="flex gap-4 mt-6">
           <button className="px-6 py-3 rounded-2xl bg-white/90 text-black font-medium hover:bg-white">
-            Button 1
+            Join Us as a Member
           </button>
           <button className="px-6 py-3 rounded-2xl bg-black/50 text-white font-medium hover:bg-black/70">
-            Button 2
+            Join Us as a Sponsor
           </button>
         </div>
       </div>

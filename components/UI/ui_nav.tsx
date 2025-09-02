@@ -3,7 +3,8 @@ import { gsap } from "gsap";
 // use your own icon import if react-icons is not available
 import { GoArrowUpRight } from "react-icons/go";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
-
+import Image from "next/image";
+import logo from "../public/W.png";
 type CardNavLink = {
   label: string;
   href: string;
@@ -18,7 +19,6 @@ export type CardNavItem = {
 };
 
 export interface CardNavProps {
-  logo: string;
   logoAlt?: string;
   items: CardNavItem[];
   className?: string;
@@ -30,7 +30,6 @@ export interface CardNavProps {
 }
 
 const CardNav: React.FC<CardNavProps> = ({
-  logo,
   logoAlt = "Logo",
   items,
   className = "",
@@ -195,11 +194,17 @@ const CardNav: React.FC<CardNavProps> = ({
           </div>
 
           <div className="logo-container flex items-center md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 order-1 md:order-none">
-            <img src={logo} alt={logoAlt} className="logo h-[28px]" />
+            <Image
+              src="/W.png"
+              alt={logoAlt}
+              width={50}
+              height={50}
+              className="logo "
+            />
           </div>
 
           <SignedOut>
-            <SignInButton>
+            <a href="/sign-up">
               <button
                 type="button"
                 className="card-nav-cta-button hidden md:inline-flex border-0 rounded-[calc(0.75rem-0.2rem)] px-4 py-2 h-full font-medium cursor-pointer transition-colors duration-300"
@@ -208,9 +213,9 @@ const CardNav: React.FC<CardNavProps> = ({
                   color: buttonTextColor,
                 }}
               >
-                Sign In
+                Sign Up
               </button>
-            </SignInButton>
+            </a>
           </SignedOut>
           <SignedIn>
             <UserButton />

@@ -111,7 +111,7 @@ export default function CreateClubPage() {
         hasCover: Boolean(coverFile),
       };
 
-      const res = await fetch("/api/clubs", {
+      const res = await fetch("/api/welcome/create-club", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

@@ -16,7 +16,7 @@ const WelcomePage = () => {
     >
       <h1>Welcome!</h1>
       <div style={{ marginTop: 24, display: "flex", gap: 16 }}>
-        <Link href="welcome/join-club">
+        <Link href="welcome/join-a-club">
           <button
             style={{
               padding: "10px 24px",

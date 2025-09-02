@@ -6,12 +6,14 @@ import {
   IconBrandTabler,
   IconSettings,
   IconUserBolt,
+  IconUserPlus,
+  IconUser,
 } from "@tabler/icons-react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
-import Header from "@/components/UI/dashboard_header";
+import Header from "@/components/dashboard_header";
 
 export default function SidebarDemo() {
   const { isLoaded, isSignedIn, user } = useUser();
@@ -50,18 +52,26 @@ export default function SidebarDemo() {
         <IconBrandTabler className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />
       ),
     },
-    {
-      label: "Profile",
-      href: "#",
-      icon: (
-        <IconUserBolt className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />
-      ),
-    },
+
     {
       label: "Settings",
       href: "#",
       icon: (
         <IconSettings className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />
+      ),
+    },
+    {
+      label: "Join a club",
+      href: "/welcome/join-a-club",
+      icon: (
+        <IconUser className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />
+      ),
+    },
+    {
+      label: "Create Club",
+      href: "/welcome/create-club",
+      icon: (
+        <IconUserPlus className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />
       ),
     },
     {
@@ -116,7 +126,7 @@ export default function SidebarDemo() {
 export const Logo = () => {
   return (
     <a
-      href="#"
+      href="/"
       className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-black"
     >
       <div className="h-5 w-6 shrink-0 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-light" />

@@ -6,6 +6,7 @@ import {
   SponsorshipStatus,
   PaymentMethod,
 } from "@prisma/client";
+import { get } from "http";
 
 const prisma = new PrismaClient();
 
@@ -28,7 +29,20 @@ export const userQueries = {
       },
     });
   },
-
+  getUserClubs: async (userId: string) => {
+    return await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        memberships: {
+          include: {
+            club: true,
+            department: true,
+          },
+        },
+        clubs: true,
+      },
+    });
+  },
   // Get user by auth ID
   getUserByAuthId: async (authUserId: string) => {
     return await prisma.user.findUnique({
@@ -59,6 +73,86 @@ export const userQueries = {
     });
   },
 
+  getwholeprofile: async (userId: string) => {
+    return await prisma.user.findUnique({
+      where: { authUserId: userId },
+      include: {
+        memberships: {
+          include: {
+            club: true,
+            department: true,
+          },
+        },
+        clubs: true, // clubs they admin
+        sponsorProfile: true,
+        sponsorships: {
+          include: {
+            event: {
+              include: {
+                club: true,
+              },
+            },
+          },
+        },
+        rsvps: {
+          include: {
+            event: {
+              include: {
+                club: true,
+              },
+            },
+          },
+          orderBy: {
+            event: {
+              startDate: "desc",
+            },
+          },
+        },
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+  updateUserProfile: async (userId: string, validatedData: any) => {
+    return await prisma.user.update({
+      where: { authUserId: userId },
+      data: {
+        name: validatedData.name,
+        email: validatedData.email,
+      },
+      include: {
+        memberships: {
+          include: {
+            club: true,
+            department: true,
+          },
+        },
+        clubs: true,
+        sponsorProfile: true,
+        sponsorships: true,
+        rsvps: {
+          include: {
+            event: {
+              include: {
+                club: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  },
   // Get user by ID with full details
   getUserById: async (id: string) => {
     return await prisma.user.findUnique({
