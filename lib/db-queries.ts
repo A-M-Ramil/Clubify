@@ -622,9 +622,16 @@ export const eventQueries = {
     longitude?: number;
     startDate: Date;
     endDate?: Date;
+    imageUrl?: string;
   }) => {
+    const { imageUrl, ...eventData } = data;
     return await prisma.event.create({
-      data,
+      data: {
+        ...eventData,
+        images: imageUrl ? {
+          create: [{ url: imageUrl }],
+        } : undefined,
+      },
       include: {
         club: true,
         department: true,

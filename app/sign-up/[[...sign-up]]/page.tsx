@@ -7,7 +7,12 @@ import Link from "next/link";
 import { Label } from "@/components/UI/label";
 import { Input } from "@/components/UI/input";
 import { cn } from "@/lib/utils";
-import { IconBrandApple, IconBrandGoogle } from "@tabler/icons-react";
+import {
+  IconBrandApple,
+  IconBrandGoogle,
+  IconBuilding,
+  IconUsers,
+} from "@tabler/icons-react";
 
 export default function Signup() {
   const { isLoaded, signUp, setActive } = useSignUp() as any;
@@ -16,6 +21,9 @@ export default function Signup() {
 
   const [emailAddress, setEmailAddress] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [selectedRole, setSelectedRole] = React.useState<"MEMBER" | "SPONSOR">(
+    "MEMBER"
+  );
   const [pendingVerification, setPendingVerification] = React.useState(false);
   const [verificationCode, setVerificationCode] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
@@ -28,7 +36,7 @@ export default function Signup() {
     if (error) setError(null);
     if (info) setInfo(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [emailAddress, password, verificationCode]);
+  }, [emailAddress, password, verificationCode, selectedRole]);
 
   if (!isLoaded) return null;
 
@@ -73,6 +81,9 @@ export default function Signup() {
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          globalRole: selectedRole,
+        }),
         credentials: "include", // Important for Clerk session cookies
       });
 
@@ -114,9 +125,13 @@ export default function Signup() {
         try {
           setInfo("Creating your profile...");
           await createUserInDatabase();
-
+          if (selectedRole === "SPONSOR") {
+            router.push("/events");
+          } else {
+            router.push("/dashboard");
+          }
           // Redirect to dashboard on success
-          router.push("/welcome");
+
           return;
         } catch (dbError: any) {
           // If database creation fails, still redirect but show warning
@@ -127,7 +142,11 @@ export default function Signup() {
 
           // Still redirect after a short delay to let user see the message
           setTimeout(() => {
-            router.push("/dashboard");
+            if (selectedRole === "SPONSOR") {
+              router.push("/events");
+            } else {
+              router.push("/dashboard");
+            }
           }, 3000);
           return;
         }
@@ -172,6 +191,9 @@ export default function Signup() {
     }
 
     try {
+      // Store the selected role in sessionStorage before OAuth redirect
+      sessionStorage.setItem("pendingUserRole", selectedRole);
+
       await signIn.authenticateWithRedirect({
         strategy,
         redirectUrl: "/sign-in/sso-callback",
@@ -181,6 +203,77 @@ export default function Signup() {
       setError(safeErrorMessage(err));
     }
   }
+
+  const RoleCard = ({
+    role,
+    title,
+    description,
+    icon: Icon,
+    isSelected,
+    onClick,
+  }: {
+    role: "MEMBER" | "SPONSOR";
+    title: string;
+    description: string;
+    icon: React.ComponentType<any>;
+    isSelected: boolean;
+    onClick: () => void;
+  }) => (
+    <div
+      className={cn(
+        "relative cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 hover:shadow-md",
+        isSelected
+          ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20"
+          : "border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600"
+      )}
+      onClick={onClick}
+    >
+      <div className="flex items-start space-x-3">
+        <div
+          className={cn(
+            "flex h-10 w-10 items-center justify-center rounded-full",
+            isSelected
+              ? "bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300"
+              : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+          )}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="flex-1">
+          <h3
+            className={cn(
+              "font-medium",
+              isSelected
+                ? "text-blue-900 dark:text-blue-100"
+                : "text-gray-900 dark:text-gray-100"
+            )}
+          >
+            {title}
+          </h3>
+          <p
+            className={cn(
+              "mt-1 text-sm",
+              isSelected
+                ? "text-blue-700 dark:text-blue-300"
+                : "text-gray-600 dark:text-gray-400"
+            )}
+          >
+            {description}
+          </p>
+        </div>
+        <div
+          className={cn(
+            "h-4 w-4 rounded-full border-2 flex items-center justify-center",
+            isSelected
+              ? "border-blue-500 bg-blue-500"
+              : "border-gray-300 dark:border-gray-600"
+          )}
+        >
+          {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-primary p-4">
@@ -207,6 +300,31 @@ export default function Signup() {
 
         {!pendingVerification ? (
           <form className="my-8" onSubmit={handleSignUp}>
+            {/* Role Selection */}
+            <div className="mb-6">
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                I want to sign up as:
+              </Label>
+              <div className="mt-3 space-y-3">
+                <RoleCard
+                  role="MEMBER"
+                  title="Club Member"
+                  description="Join clubs, attend events, and connect with other students"
+                  icon={IconUsers}
+                  isSelected={selectedRole === "MEMBER"}
+                  onClick={() => setSelectedRole("MEMBER")}
+                />
+                <RoleCard
+                  role="SPONSOR"
+                  title="Sponsor/Business"
+                  description="Sponsor events, connect with clubs, and promote your business"
+                  icon={IconBuilding}
+                  isSelected={selectedRole === "SPONSOR"}
+                  onClick={() => setSelectedRole("SPONSOR")}
+                />
+              </div>
+            </div>
+
             <LabelInputContainer className="mb-4">
               <Label htmlFor="email">Email Address</Label>
               <Input
@@ -246,7 +364,9 @@ export default function Signup() {
               aria-busy={isSubmitting}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Creating account..." : "Sign up →"}
+              {isSubmitting
+                ? "Creating account..."
+                : `Sign up as ${selectedRole === "MEMBER" ? "Club Member" : "Sponsor"} →`}
               <BottomGradient />
             </button>
 
@@ -260,7 +380,7 @@ export default function Signup() {
               >
                 <IconBrandApple className="h-4 w-4 text-neutral-800 dark:text-neutral-300" />
                 <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                  Apple
+                  Continue with Apple
                 </span>
                 <BottomGradient />
               </button>
@@ -272,7 +392,7 @@ export default function Signup() {
               >
                 <IconBrandGoogle className="h-4 w-4 text-neutral-800 dark:text-neutral-300" />
                 <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                  Google
+                  Continue with Google
                 </span>
                 <BottomGradient />
               </button>
@@ -287,6 +407,15 @@ export default function Signup() {
           </form>
         ) : (
           <form className="my-8" onSubmit={handleVerify}>
+            <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                Creating account as:{" "}
+                <span className="font-medium">
+                  {selectedRole === "MEMBER" ? "Club Member" : "Sponsor"}
+                </span>
+              </p>
+            </div>
+
             <LabelInputContainer className="mb-4">
               <Label htmlFor="code">Verification Code</Label>
               <Input
@@ -323,7 +452,7 @@ export default function Signup() {
                 onClick={handleCancelVerification}
                 className="underline"
               >
-                Edit email / password
+                Edit details
               </button>
               <button
                 type="button"

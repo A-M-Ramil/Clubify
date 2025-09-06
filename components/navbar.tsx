@@ -40,24 +40,26 @@ const App = () => {
       ],
     },
     {
-      label: "Contact",
+      label: "Events",
       bgColor: "#3a3a3a",
       textColor: "#cacaca",
       links: [
         {
-          label: "Email",
-          href: "mailto:info@company.com",
-          ariaLabel: "Email us",
+          label: "Browse All Events",
+          href: "/events",
+          ariaLabel: "Browse All Events",
         },
+      ],
+    },
+    {
+      label: "Join Us",
+      bgColor: "#4a4a4a",
+      textColor: "#cacaca",
+      links: [
         {
-          label: "Twitter",
-          href: "https://twitter.com/company",
-          ariaLabel: "Twitter",
-        },
-        {
-          label: "LinkedIn",
-          href: "https://linkedin.com/company/company",
-          ariaLabel: "LinkedIn",
+          label: "Create an Account",
+          href: "/join-us",
+          ariaLabel: "Create an Account",
         },
       ],
     },

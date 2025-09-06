@@ -204,7 +204,7 @@ const CardNav: React.FC<CardNavProps> = ({
           </div>
 
           <SignedOut>
-            <a href="/sign-up">
+            <a href="/join-us">
               <button
                 type="button"
                 className="card-nav-cta-button hidden md:inline-flex border-0 rounded-[calc(0.75rem-0.2rem)] px-4 py-2 h-full font-medium cursor-pointer transition-colors duration-300"
@@ -213,7 +213,7 @@ const CardNav: React.FC<CardNavProps> = ({
                   color: buttonTextColor,
                 }}
               >
-                Sign Up
+                Join Us
               </button>
             </a>
           </SignedOut>

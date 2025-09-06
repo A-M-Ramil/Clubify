@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import Card from "@/components/UI/card";
+import Card from "@/components/UI/pricing_card";
 
 function Pricing() {
   return (

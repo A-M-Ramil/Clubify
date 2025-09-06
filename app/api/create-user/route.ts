@@ -16,8 +16,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Parse the request body to get the role
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (e) {
+      requestBody = {};
+    }
+
+    const { globalRole } = requestBody;
+
+    // Validate the role if provided
+    const validRoles = Object.values(GlobalRole);
+    const selectedRole =
+      globalRole && validRoles.includes(globalRole)
+        ? globalRole
+        : GlobalRole.MEMBER;
+
     const authUserId = clerkUser.id;
-    console.log("Creating user for authUserId:", authUserId);
+    console.log(
+      "Creating user for authUserId:",
+      authUserId,
+      "with role:",
+      selectedRole
+    );
 
     // Check if user already exists in our database
     try {
@@ -65,17 +87,41 @@ export async function POST(req: NextRequest) {
       name = email.split("@")[0];
     }
 
-    console.log("Creating user with data:", { authUserId, email, name });
+    console.log("Creating user with data:", {
+      authUserId,
+      email,
+      name,
+      globalRole: selectedRole,
+    });
 
     // Create the user in your Prisma database
     const newUser = await userQueries.createUser({
       authUserId: authUserId,
       email: email,
       name: name,
-      globalRole: GlobalRole.MEMBER,
+      globalRole: selectedRole,
     });
 
-    console.log("User created successfully:", newUser.id);
+    console.log(
+      "User created successfully:",
+      newUser.id,
+      "with role:",
+      newUser.globalRole
+    );
+
+    // If user is a sponsor, create their sponsor profile
+    if (selectedRole === GlobalRole.SPONSOR) {
+      try {
+        // You might want to create a sponsor profile here or handle it separately
+        // For now, we'll just log it
+        console.log(
+          "Sponsor user created - sponsor profile creation may be handled separately"
+        );
+      } catch (sponsorError) {
+        console.error("Error creating sponsor profile:", sponsorError);
+        // Don't fail the entire operation if sponsor profile creation fails
+      }
+    }
 
     return NextResponse.json(
       {

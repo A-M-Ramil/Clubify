@@ -2,60 +2,80 @@
 "use client";
 
 import { useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 
 export default function SSOCallback() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    const createUserIfNeeded = async () => {
-      if (!isLoaded || !user) return;
+    if (!isLoaded) return;
 
-      try {
-        // Create user record in database after OAuth signup
-        const response = await fetch("/api/create-user", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
+    const handleOAuthCallback = async () => {
+      if (user) {
+        try {
+          // Get the role from sessionStorage if it was stored before OAuth (for sign-up)
+          const pendingRole = sessionStorage.getItem("pendingUserRole");
 
-        if (response.ok) {
-          const result = await response.json();
-          console.log("User record created/verified:", result);
-        } else {
-          console.warn("Failed to create user record:", await response.text());
+          // Clear the stored role
+          if (pendingRole) {
+            sessionStorage.removeItem("pendingUserRole");
+          }
+
+          // Try to create user (this will handle both new users and existing users)
+          const response = await fetch("/api/create-user", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              globalRole: pendingRole || "MEMBER", // Use stored role or default to MEMBER
+            }),
+            credentials: "include",
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log("OAuth user handled:", result.user);
+
+            // Redirect to appropriate dashboard based on role
+            if (result.user.globalRole === "SPONSOR") {
+              router.push("/events");
+            } else {
+              router.push("/dashboard");
+            }
+          } else if (response.status === 409) {
+            // User already exists, just redirect to dashboard
+            console.log("User already exists, redirecting to dashboard");
+            router.push("/");
+          } else {
+            console.error("Failed to handle user after OAuth");
+            router.push("/"); // Fallback redirect
+          }
+        } catch (error) {
+          console.error("Error in OAuth callback:", error);
+          router.push("/"); // Fallback redirect
         }
-      } catch (error) {
-        console.error("Error creating user record:", error);
-      } finally {
-        // Redirect to dashboard regardless
-        router.push("/dashboard");
+      } else {
+        // If no user, redirect to sign-in
+        router.push("/sign-in");
       }
     };
 
-    createUserIfNeeded();
-  }, [isLoaded, user, router]);
+    handleOAuthCallback();
+  }, [user, isLoaded, router]);
 
-  if (!isLoaded) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Setting up your account...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Show loading state
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center min-h-screen bg-primary">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Finalizing your registration...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+        <p className="text-neutral-600 dark:text-neutral-300">
+          {sessionStorage.getItem("pendingUserRole")
+            ? "Setting up your account..."
+            : "Signing you in..."}
+        </p>
       </div>
     </div>
   );

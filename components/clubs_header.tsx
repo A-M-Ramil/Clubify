@@ -13,7 +13,12 @@ const HoverDevCards = ({ clubId }: { clubId: string }) => {
           href={`/dashboard/joinedclubs/${clubId}/members`}
           Icon={FiUser}
         />
-        <Card title="Email" subtitle="Send email" href="#" Icon={FiMail} />
+        <Card
+          title="Email"
+          subtitle="Send email"
+          href={`/dashboard/joinedclubs/${clubId}/email`}
+          Icon={FiMail}
+        />
         <Card
           title="Department"
           subtitle="Manage department"
@@ -23,7 +28,7 @@ const HoverDevCards = ({ clubId }: { clubId: string }) => {
         <Card
           title="Events"
           subtitle="Manage events"
-          href="#"
+          href={`/dashboard/joinedclubs/${clubId}/events`}
           Icon={FiCreditCard}
         />
       </div>

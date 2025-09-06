@@ -27,12 +27,16 @@ export default function Hero() {
           Say goodbye to endless spreadsheets, messy chats, and missed updates.
         </p>
         <div className="flex gap-4 mt-6">
-          <button className="px-6 py-3 rounded-2xl bg-white/90 text-black font-medium hover:bg-white">
-            Join Us as a Member
-          </button>
-          <button className="px-6 py-3 rounded-2xl bg-black/50 text-white font-medium hover:bg-black/70">
-            Join Us as a Sponsor
-          </button>
+          <a href="/sign-up">
+            <button className="px-6 py-3  rounded-2xl bg-white/90 text-black font-medium hover:bg-primary hover:text-white">
+              Join Us as a Member
+            </button>
+          </a>
+          <a href="/sign-up/sponsor">
+            <button className="px-6 py-3 rounded-2xl bg-black/50 text-white font-medium hover:bg-light/70">
+              Join Us as a Sponsor
+            </button>
+          </a>
         </div>
       </div>
     </main>

@@ -231,7 +231,7 @@ const ClubDetailsPage = () => {
             </div>
           )}
         </div>
-        <Header />
+        <Header clubId={clubId} />
         {/* Cover Image */}
         {(data.club.coverImage || isEditing) && (
           <div className="mb-8">
