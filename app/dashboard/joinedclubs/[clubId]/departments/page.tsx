@@ -11,6 +11,7 @@ import {
   Save,
   X,
 } from "lucide-react";
+import JoinDepartmentModal from "@/components/JoinDepartmentModal"; // Import the modal
 
 // Types
 interface Department {
@@ -46,6 +47,7 @@ const DepartmentsPage = () => {
   const [editingDept, setEditingDept] = useState<string | null>(null);
   const [newDeptName, setNewDeptName] = useState("");
   const [editDeptName, setEditDeptName] = useState("");
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false); // State for the modal
 
   useEffect(() => {
     fetchDepartments();
@@ -162,6 +164,32 @@ const DepartmentsPage = () => {
     }
   };
 
+  const handleJoinDepartment = async (departmentId: string) => {
+    try {
+      const response = await fetch(
+        `/api/dashboard/joinedclubs/${clubId}/departments/join`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ departmentId }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to join department");
+      }
+
+      await fetchDepartments();
+      setIsJoinModalOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to join department");
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -217,15 +245,24 @@ const DepartmentsPage = () => {
             </div>
           </div>
 
-          {data.canManage && (
+          <div className="flex items-center gap-4">
             <button
-              onClick={() => setIsCreating(true)}
+              onClick={() => setIsJoinModalOpen(true)}
               className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-md transition-colors"
             >
               <Plus className="h-4 w-4" />
-              Add Department
+              Join Department
             </button>
-          )}
+            {data.canManage && (
+              <button
+                onClick={() => setIsCreating(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-md transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Add Department
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Create Department Form */}
@@ -412,6 +449,12 @@ const DepartmentsPage = () => {
           </div>
         )}
       </div>
+      <JoinDepartmentModal
+        departments={data.departments}
+        isOpen={isJoinModalOpen}
+        onClose={() => setIsJoinModalOpen(false)}
+        onJoin={handleJoinDepartment}
+      />
     </div>
   );
 };

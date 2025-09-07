@@ -27,6 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/UI/table";
+import { ArrowLeft } from "lucide-react";
 
 // Types based on your Prisma schema
 interface User {
@@ -226,14 +227,21 @@ export default function EmailPage() {
   }
 
   return (
-    <div className="p-4 dark:text-white/80 md:p-6 space-y-6">
+    <div className="p-4  dark:text-white/70 md:p-6 space-y-6">
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+      >
+        <ArrowLeft className="h-5 w-5" />
+        Back
+      </button>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5 " />
+          <CardTitle className="flex dark:text-purple-500   items-center gap-2">
+            <Mail className="h-5 w-5  " />
             Send Bulk Email
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="dark:text-white">
             Select members from the list below, compose your message, and send
             it to them.
           </CardDescription>
@@ -243,12 +251,17 @@ export default function EmailPage() {
           {/* Members Selection Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium flex items-center gap-2">
-                <Users className="h-4 w-4" />
+              <h3 className="text-lg font-medium dark:text-purple-500 flex items-center gap-2">
+                <Users className="h-4 w-4  " />
                 Select Recipients ({selectedMembers.size} selected)
               </h3>
               {members.length > 0 && (
-                <Button variant="outline" size="sm" onClick={toggleAllMembers}>
+                <Button
+                  variant="outline"
+                  className="border-transparent hover:bg-purple-950 text-white bg-purple-700"
+                  size="sm"
+                  onClick={toggleAllMembers}
+                >
                   {selectedMembers.size === members.length
                     ? "Deselect All"
                     : "Select All"}
@@ -325,11 +338,16 @@ export default function EmailPage() {
                             {member.user.email}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline">{member.role}</Badge>
+                            <Badge variant="outline" className="text-amber-500">
+                              {member.role}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             {member.department ? (
-                              <Badge variant="secondary">
+                              <Badge
+                                variant="secondary"
+                                className="text-white  bg-purple-950"
+                              >
                                 {member.department.name}
                               </Badge>
                             ) : (
@@ -349,11 +367,14 @@ export default function EmailPage() {
 
           {/* Email Composition Section */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Compose Email</h3>
+            <h3 className="text-lg font-medium dark:text-purple-500">
+              Compose Email
+            </h3>
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="subject">Subject *</Label>
                 <Input
+                  className="!bg-primary "
                   id="subject"
                   placeholder="Enter email subject"
                   value={subject}
@@ -406,23 +427,6 @@ export default function EmailPage() {
           </Button>
         </CardFooter>
       </Card>
-
-      {/* Debug Info (remove in production) */}
-      {process.env.NODE_ENV === "development" && (
-        <Card className="bg-muted/50">
-          <CardHeader>
-            <CardTitle className="text-sm">Debug Info</CardTitle>
-          </CardHeader>
-          <CardContent className="text-xs space-y-2">
-            <p>Club ID: {clubId}</p>
-            <p>Can Send Email: {canSendEmail.toString()}</p>
-            <p>Members Count: {members.length}</p>
-            <p>Selected Count: {selectedMembers.size}</p>
-            <p>Is Fetching: {isFetchingMembers.toString()}</p>
-            {error && <p className="text-destructive">Error: {error}</p>}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

@@ -75,7 +75,7 @@ export async function POST(
     // Send email using Resend
     const result = await resend.emails.send({
       from: `${club.name} <onboarding@resend.dev>`, // Replace with your verified Resend domain
-      to: [...to], // Required by Resend for testing
+      to: to[0], // Required by Resend for testing
       // Actual recipients
       subject: subject,
       react: EmailTemplate({ Clubname: club.name }),

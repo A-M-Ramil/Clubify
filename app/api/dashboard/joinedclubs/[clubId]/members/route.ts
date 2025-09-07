@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { clubQueries, membershipQueries } from "@/lib/db-queries";
 
-// GET - Fetch all club members
+// GET - Fetch all club members and departments
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ clubId: string }> }
@@ -52,10 +52,21 @@ export async function GET(
     // Get all club members
     const members = await clubQueries.getClubMembers(clubId);
 
+    // Get all departments for this club
+    const departments = await prisma.department.findMany({
+      where: { clubId },
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: { name: "asc" },
+    });
+
     return NextResponse.json({
       success: true,
       data: {
         members,
+        departments,
         canManage:
           userMembership.role === "PRESIDENT" || userMembership.role === "HR",
       },
@@ -69,7 +80,7 @@ export async function GET(
   }
 }
 
-// PUT - Update member role (only for presidents/HR)
+// PUT - Update member role or department (only for presidents/HR)
 export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ clubId: string }> }
@@ -118,24 +129,100 @@ export async function PUT(
       );
     }
 
-    const { targetUserId, newRole } = await request.json();
+    const body = await request.json();
+    const { targetUserId, newRole, departmentId, action } = body;
 
-    // Update member role
-    const updatedMembership = await membershipQueries.updateMemberRole(
-      targetUserId,
-      clubId,
-      newRole
-    );
-
-    return NextResponse.json({
-      success: true,
-      data: updatedMembership,
-      message: "Member role updated successfully",
+    // Verify the target user is actually a member of this club
+    const targetMembership = await prisma.membership.findUnique({
+      where: {
+        userId_clubId: {
+          userId: targetUserId,
+          clubId: clubId,
+        },
+      },
     });
-  } catch (error) {
-    console.error("Error updating member role:", error);
+
+    if (!targetMembership) {
+      return NextResponse.json(
+        { error: "Target user is not a member of this club" },
+        { status: 404 }
+      );
+    }
+
+    let updatedMembership;
+
+    if (action === "updateRole" && newRole) {
+      // Update member role
+      updatedMembership = await membershipQueries.updateMemberRole(
+        targetUserId,
+        clubId,
+        newRole
+      );
+
+      return NextResponse.json({
+        success: true,
+        data: updatedMembership,
+        message: "Member role updated successfully",
+      });
+    } else if (action === "updateDepartment") {
+      // Update member department
+      updatedMembership = await prisma.membership.update({
+        where: {
+          userId_clubId: {
+            userId: targetUserId,
+            clubId: clubId,
+          },
+        },
+        data: {
+          departmentId: departmentId === "" ? null : departmentId,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          department: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: updatedMembership,
+        message: "Member department updated successfully",
+      });
+    } else {
+      // Legacy support - if no action is specified, assume role update
+      if (newRole) {
+        updatedMembership = await membershipQueries.updateMemberRole(
+          targetUserId,
+          clubId,
+          newRole
+        );
+
+        return NextResponse.json({
+          success: true,
+          data: updatedMembership,
+          message: "Member role updated successfully",
+        });
+      }
+    }
+
     return NextResponse.json(
-      { error: "Failed to update member role" },
+      { error: "Invalid action or missing required fields" },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error("Error updating member:", error);
+    return NextResponse.json(
+      { error: "Failed to update member" },
       { status: 500 }
     );
   }
@@ -169,7 +256,7 @@ export async function DELETE(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Verify user is president
+    // Verify user is president or HR (allowing HR to remove members too)
     const userMembership = await prisma.membership.findUnique({
       where: {
         userId_clubId: {
@@ -180,20 +267,44 @@ export async function DELETE(
       select: { role: true },
     });
 
-    if (!userMembership || userMembership.role !== "PRESIDENT") {
+    if (
+      !userMembership ||
+      (userMembership.role !== "PRESIDENT" && userMembership.role !== "HR")
+    ) {
       return NextResponse.json(
-        { error: "Only presidents can remove members" },
+        { error: "Only presidents and HR can remove members" },
         { status: 403 }
       );
     }
 
     const { targetUserId } = await request.json();
 
-    // Prevent president from removing themselves
+    // Prevent user from removing themselves
     if (targetUserId === user.id) {
       return NextResponse.json(
         { error: "You cannot remove yourself from the club" },
         { status: 400 }
+      );
+    }
+
+    // Prevent removing the president (only president can remove themselves by transferring role first)
+    const targetMembership = await prisma.membership.findUnique({
+      where: {
+        userId_clubId: {
+          userId: targetUserId,
+          clubId: clubId,
+        },
+      },
+      select: { role: true },
+    });
+
+    if (
+      targetMembership?.role === "PRESIDENT" &&
+      userMembership.role !== "PRESIDENT"
+    ) {
+      return NextResponse.json(
+        { error: "Only the president can remove another president" },
+        { status: 403 }
       );
     }
 

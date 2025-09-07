@@ -205,7 +205,7 @@ const ClubDetailsPage = () => {
                   <button
                     onClick={handleCancel}
                     disabled={isSaving}
-                    className="flex items-center gap-1 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1 px-3 py-2 outline outline-red-950 bg-red-500/10 hover:bg-red-500 text-white rounded-md transition-colors disabled:opacity-50"
                   >
                     <X className="h-4 w-4" />
                     Cancel
@@ -213,7 +213,7 @@ const ClubDetailsPage = () => {
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1 px-3 py-2 outline outline-green-950 bg-green-500/10 hover:bg-green-800 text-white rounded-md transition-colors disabled:opacity-50"
                   >
                     <Save className="h-4 w-4" />
                     {isSaving ? "Saving..." : "Save"}
@@ -222,7 +222,7 @@ const ClubDetailsPage = () => {
               ) : (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors"
+                  className="flex items-center gap-1 px-3 py-2 outline outline-purple-950 bg-purple-500/10 hover:bg-purple-700 text-white rounded-md transition-colors"
                 >
                   <Edit className="h-4 w-4" />
                   Edit Club
@@ -249,7 +249,7 @@ const ClubDetailsPage = () => {
                       coverImage: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 !bg-primary border border-neutral-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="https://example.com/image.jpg"
                 />
               </div>
@@ -280,7 +280,7 @@ const ClubDetailsPage = () => {
                     onChange={(e) =>
                       setEditForm((prev) => ({ ...prev, name: e.target.value }))
                     }
-                    className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 !bg-primary  border border-neutral-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     required
                   />
                 </div>
@@ -307,7 +307,7 @@ const ClubDetailsPage = () => {
                         university: e.target.value,
                       }))
                     }
-                    className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 !bg-primary border border-neutral-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     required
                   />
                 </div>
@@ -335,7 +335,7 @@ const ClubDetailsPage = () => {
                       }))
                     }
                     rows={4}
-                    className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 !bg-primary border border-neutral-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     placeholder="Club description..."
                   />
                 </div>
@@ -373,7 +373,7 @@ const ClubDetailsPage = () => {
                           contactEmail: e.target.value,
                         }))
                       }
-                      className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 !bg-primary border border-neutral-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       placeholder="club@university.edu"
                     />
                   </div>
@@ -406,7 +406,7 @@ const ClubDetailsPage = () => {
                           website: e.target.value,
                         }))
                       }
-                      className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 !bg-primary border border-neutral-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       placeholder="https://clubwebsite.com"
                     />
                   </div>
@@ -443,12 +443,12 @@ const ClubDetailsPage = () => {
                       data.userMembership.role === "PRESIDENT"
                         ? "bg-purple-500/20 text-purple-300"
                         : data.userMembership.role === "TREASURER"
-                        ? "bg-green-500/20 text-green-300"
-                        : data.userMembership.role === "HR"
-                        ? "bg-blue-500/20 text-blue-300"
-                        : data.userMembership.role === "MARKETING"
-                        ? "bg-orange-500/20 text-orange-300"
-                        : "bg-gray-500/20 text-gray-300"
+                          ? "bg-green-500/20 text-green-300"
+                          : data.userMembership.role === "HR"
+                            ? "bg-blue-500/20 text-blue-300"
+                            : data.userMembership.role === "MARKETING"
+                              ? "bg-orange-500/20 text-orange-300"
+                              : "bg-gray-500/20 text-gray-300"
                     }`}
                   >
                     {data.userMembership.role}

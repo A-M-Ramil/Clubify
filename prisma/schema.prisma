@@ -1,109 +1,75 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL") // Supabase / Kinde-backed Postgres URL
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
-// ==================================================
-// USER & GLOBAL ROLES
-// ==================================================
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 model User {
-  id            String        @id @default(cuid())
-  authUserId    String        @unique // external IdP user id (Supabase / Kinde ...)
-  email         String        @unique
-  name          String
-  globalRole    GlobalRole    @default(MEMBER)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  university    String?       
-
-  // Relations
-  memberships     Membership[]
-  clubs           Club[]       @relation("ClubAdmins")
-  sponsorProfile  SponsorProfile?
-  sponsorships    Sponsorship[]
-  rsvps           RSVP[]
-  messagesSent    Message[]    @relation("SentMessages")
-  messagesReceived Message[]   @relation("ReceivedMessages")
-  roles           UserRole[]   // custom RBAC roles (UserRole join table)
+  id               String          @id @default(cuid())
+  authUserId       String          @unique
+  email            String          @unique
+  name             String
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  globalRole       GlobalRole      @default(MEMBER)
+  university       String?
+  memberships      Membership[]
+  messagesReceived Message[]       @relation("ReceivedMessages")
+  messagesSent     Message[]       @relation("SentMessages")
+  rsvps            RSVP[]
+  sponsorProfile   SponsorProfile?
+  sponsorships     Sponsorship[]
+  roles            UserRole[]
+  clubs            Club[]          @relation("ClubAdmins")
 }
 
-enum GlobalRole {
-  ADMIN    // Platform super admin
-  SPONSOR  // Sponsor account / business owner
-  MEMBER   // Default club member
-}
-
-// ==================================================
-// CLUBS, MEMBERSHIPS & DEPARTMENTS
-// ==================================================
 model Club {
-  id          String       @id @default(cuid())
-  name        String
-  university  String
-  description String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  approved Boolean         @default(false)
+  id           String       @id @default(cuid())
+  name         String
+  university   String
+  description  String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  approved     Boolean      @default(false)
   contactEmail String?
-  website String?
-  coverImage String?
-  
-
-  // Relations
-  members     Membership[]
-  events      Event[]
-  departments Department[]
-  admins      User[]       @relation("ClubAdmins") // implicit many-to-many for club admins
+  coverImage   String?
+  website      String?
+  departments  Department[]
+  events       Event[]
+  members      Membership[]
+  admins       User[]       @relation("ClubAdmins")
 }
 
 model Membership {
   id           String      @id @default(cuid())
   userId       String
   clubId       String
-  departmentId String?     // optional: member may belong to a department
   role         ClubRole
   joinedAt     DateTime    @default(now())
+  departmentId String?
+  club         Club        @relation(fields: [clubId], references: [id])
+  department   Department? @relation(fields: [departmentId], references: [id])
+  user         User        @relation(fields: [userId], references: [id])
 
-  // Relations
-  user       User       @relation(fields: [userId], references: [id])
-  club       Club       @relation(fields: [clubId], references: [id])
-  department Department? @relation(fields: [departmentId], references: [id])
-
-  @@unique([userId, clubId]) // prevent duplicate membership records
-}
-
-enum ClubRole {
-  PRESIDENT
-  TREASURER
-  HR
-  MARKETING
-  MEMBER
-  ALUMNI
+  @@unique([userId, clubId])
 }
 
 model Department {
-  id        String     @id @default(cuid())
+  id        String       @id @default(cuid())
   name      String
   clubId    String
-  createdAt DateTime   @default(now())
-
-  // Relations
-  club    Club       @relation(fields: [clubId], references: [id])
-  members Membership[]
-  events  Event[]
+  createdAt DateTime     @default(now())
+  club      Club         @relation(fields: [clubId], references: [id])
+  events    Event[]
+  members   Membership[]
 }
 
-// ==================================================
-// EVENTS & RSVPS
-// ==================================================
 model Event {
   id           String        @id @default(cuid())
   clubId       String
-  departmentId String?
   title        String
   description  String?
   location     String?
@@ -112,8 +78,7 @@ model Event {
   startDate    DateTime
   endDate      DateTime?
   createdAt    DateTime      @default(now())
-
-  // Relations
+  departmentId String?
   club         Club          @relation(fields: [clubId], references: [id])
   department   Department?   @relation(fields: [departmentId], references: [id])
   images       EventImage[]
@@ -128,55 +93,114 @@ model EventImage {
   event   Event  @relation(fields: [eventId], references: [id])
 }
 
-// RSVP for users attending events
 model RSVP {
   id      String     @id @default(cuid())
   eventId String
   userId  String
   status  RSVPStatus @default(PENDING)
+  event   Event      @relation(fields: [eventId], references: [id])
+  user    User       @relation(fields: [userId], references: [id])
 
-  // Relations
-  event Event @relation(fields: [eventId], references: [id])
-  user  User  @relation(fields: [userId], references: [id])
+  @@unique([eventId, userId])
+}
 
-  @@unique([eventId, userId]) // one RSVP per user per event
+model SponsorProfile {
+  id           String        @id @default(cuid())
+  userId       String        @unique
+  description  String?
+  logo         String?
+  name         String?
+  website      String?
+  user         User          @relation(fields: [userId], references: [id])
+  sponsorships Sponsorship[]
+}
+
+model Sponsorship {
+  id        String            @id @default(cuid())
+  eventId   String
+  sponsorId String
+  userId    String
+  amount    Float
+  status    SponsorshipStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  payments  Payment[]
+  event     Event             @relation(fields: [eventId], references: [id])
+  sponsor   SponsorProfile    @relation(fields: [sponsorId], references: [id])
+  user      User              @relation(fields: [userId], references: [id])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  sponsorshipId String
+  method        PaymentMethod
+  amount        Float
+  createdAt     DateTime      @default(now())
+  sponsorship   Sponsorship   @relation(fields: [sponsorshipId], references: [id])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String
+  createdAt  DateTime @default(now())
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  permissions RolePermission[]
+  users       UserRole[]
+}
+
+model Permission {
+  id    String           @id @default(cuid())
+  name  String           @unique
+  roles RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  role         Role       @relation(fields: [roleId], references: [id])
+
+  @@unique([roleId, permissionId])
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, roleId])
+}
+
+enum GlobalRole {
+  ADMIN
+  SPONSOR
+  MEMBER
+}
+
+enum ClubRole {
+  PRESIDENT
+  TREASURER
+  HR
+  MARKETING
+  MEMBER
+  ALUMNI
 }
 
 enum RSVPStatus {
   PENDING
   CONFIRMED
   CANCELLED
-}
-
-// ==================================================
-// SPONSORS & SPONSORSHIPS
-// ==================================================
-model SponsorProfile {
-  id           String        @id @default(cuid())
-  userId       String        @unique
-  companyName  String
-  industry     String?
-  location     String?
-
-  // Relations
-  user         User          @relation(fields: [userId], references: [id])
-  sponsorships Sponsorship[]
-}
-
-model Sponsorship {
-  id          String             @id @default(cuid())
-  eventId     String
-  sponsorId   String
-  userId      String             // who initiated from sponsor company
-  amount      Float
-  status      SponsorshipStatus  @default(PENDING)
-  createdAt   DateTime           @default(now())
-
-  // Relations
-  event   Event          @relation(fields: [eventId], references: [id])
-  sponsor SponsorProfile @relation(fields: [sponsorId], references: [id])
-  user    User           @relation(fields: [userId], references: [id])
-  payments Payment[]
 }
 
 enum SponsorshipStatus {
@@ -187,80 +211,10 @@ enum SponsorshipStatus {
   COMPLETED
 }
 
-model Payment {
-  id             String   @id @default(cuid())
-  sponsorshipId  String
-  method         PaymentMethod
-  amount         Float
-  createdAt      DateTime @default(now())
-
-  // Relations
-  sponsorship Sponsorship @relation(fields: [sponsorshipId], references: [id])
-}
-
 enum PaymentMethod {
   BKASH
   NAGAD
   STRIPE
   PAYPAL
-}
-
-// ==================================================
-// MESSAGING
-// ==================================================
-model Message {
-  id         String   @id @default(cuid())
-  senderId   String
-  receiverId String
-  content    String
-  createdAt  DateTime @default(now())
-
-  // Relations
-  sender   User @relation("SentMessages", fields: [senderId], references: [id])
-  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id])
-}
-
-// ==================================================
-// RBAC (OPTION 1 FLEXIBLE PERMISSIONS)
-// ==================================================
-// Role: logical role definitions (EventManager, EmailSender, etc.)
-model Role {
-  id          String         @id @default(cuid())
-  name        String         @unique
-  description String?
-  permissions RolePermission[]
-  users       UserRole[]
-}
-
-// Permission: atomic actions (SEND_EMAIL, DELETE_USER, CREATE_EVENT, etc.)
-model Permission {
-  id    String   @id @default(cuid())
-  name  String   @unique // e.g. DELETE_USER, SEND_EMAIL, CREATE_EVENT
-  roles RolePermission[]
-}
-
-// RolePermission: join table role <-> permission
-model RolePermission {
-  id           String      @id @default(cuid())
-  roleId       String
-  permissionId String
-
-  // Relations
-  role       Role       @relation(fields: [roleId], references: [id])
-  permission Permission @relation(fields: [permissionId], references: [id])
-
-  @@unique([roleId, permissionId])
-}
-
-// UserRole: join table user <-> role (a user can have many roles)
-model UserRole {
-  id     String @id @default(cuid())
-  userId String
-  roleId String
-
-  // Relations
-  user User @relation(fields: [userId], references: [id])
-  role Role @relation(fields: [roleId], references: [id])
-
-  @@unique([userId, roleId])
+  PADDLE
 }

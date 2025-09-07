@@ -14,7 +14,7 @@ export async function GET() {
         },
         club: {
           approved: true, // Only show events from approved clubs
-        }
+        },
       },
       include: {
         club: {
@@ -22,12 +22,12 @@ export async function GET() {
             name: true,
             university: true,
             coverImage: true,
-          }
+          },
         },
         images: {
           select: {
             url: true,
-          }
+          },
         },
       },
       orderBy: {

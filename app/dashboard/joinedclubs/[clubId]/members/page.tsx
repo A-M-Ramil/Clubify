@@ -10,6 +10,8 @@ import {
   Edit,
   Save,
   X,
+  Building2,
+  UserPlus,
 } from "lucide-react";
 
 // Types
@@ -28,8 +30,14 @@ interface Member {
   };
 }
 
+interface Department {
+  id: string;
+  name: string;
+}
+
 interface MembersData {
   members: Member[];
+  departments: Department[];
   canManage: boolean;
 }
 
@@ -43,6 +51,8 @@ const MembersPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [editingMember, setEditingMember] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>("");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+  const [showAddToDept, setShowAddToDept] = useState<string | null>(null);
 
   const roles = [
     "PRESIDENT",
@@ -85,7 +95,11 @@ const MembersPage = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ targetUserId, newRole }),
+          body: JSON.stringify({
+            targetUserId,
+            newRole,
+            action: "updateRole",
+          }),
         }
       );
 
@@ -95,12 +109,47 @@ const MembersPage = () => {
         throw new Error(result.error || "Failed to update role");
       }
 
-      // Refresh members list
       await fetchMembers();
       setEditingMember(null);
       setSelectedRole("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update role");
+    }
+  };
+
+  const handleDepartmentUpdate = async (
+    targetUserId: string,
+    departmentId: string
+  ) => {
+    try {
+      const response = await fetch(
+        `/api/dashboard/joinedclubs/${clubId}/members`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            targetUserId,
+            departmentId,
+            action: "updateDepartment",
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to update department");
+      }
+
+      await fetchMembers();
+      setShowAddToDept(null);
+      setSelectedDepartment("");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to update department"
+      );
     }
   };
 
@@ -125,7 +174,6 @@ const MembersPage = () => {
         throw new Error(result.error || "Failed to remove member");
       }
 
-      // Refresh members list
       await fetchMembers();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to remove member");
@@ -135,7 +183,7 @@ const MembersPage = () => {
   const getRoleIcon = (role: string) => {
     switch (role) {
       case "PRESIDENT":
-        return <Crown className="h-4 w-4 text-yellow-400" />;
+        return <Crown className="h-4 w-4 text-amber-400" />;
       case "TREASURER":
       case "HR":
       case "MARKETING":
@@ -147,14 +195,14 @@ const MembersPage = () => {
 
   const getRoleBadgeColor = (role: string) => {
     const colors = {
-      PRESIDENT: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-      TREASURER: "bg-green-500/20 text-green-300 border-green-500/30",
-      HR: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-      MARKETING: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-      MEMBER: "bg-gray-500/20 text-gray-300 border-gray-500/30",
-      ALUMNI: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+      PRESIDENT: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+      TREASURER: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+      HR: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+      MARKETING: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+      MEMBER: "bg-gray-500/10 text-gray-400 border-gray-500/20",
+      ALUMNI: "bg-purple-500/10 text-purple-400 border-purple-500/20",
     };
-    return colors[role] || colors.MEMBER;
+    return colors[role as keyof typeof colors] || colors.MEMBER;
   };
 
   const formatDate = (dateString: string) => {
@@ -167,20 +215,20 @@ const MembersPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white/20"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-400 text-lg mb-4">{error}</div>
+          <div className="text-red-400 text-sm mb-4">{error}</div>
           <button
             onClick={() => router.back()}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors"
+            className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white/80 rounded-lg transition-colors text-sm"
           >
             Go Back
           </button>
@@ -192,21 +240,21 @@ const MembersPage = () => {
   if (!data) return null;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="min-h-screen bg-[#0a0a0a] text-white">
+      <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.back()}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+              className="flex items-center gap-2 text-white/60 hover:text-white/80 transition-colors text-sm"
             >
-              <ArrowLeft className="h-5 w-5" />
-              Back to Club Details
+              <ArrowLeft className="h-4 w-4" />
+              Back
             </button>
             <div>
-              <h1 className="text-3xl font-bold text-white">Club Members</h1>
-              <p className="text-gray-400">
+              <h1 className="text-2xl font-medium text-white">Members</h1>
+              <p className="text-white/40 text-sm">
                 {data.members.length} total members
               </p>
             </div>
@@ -214,16 +262,16 @@ const MembersPage = () => {
         </div>
 
         {/* Members List */}
-        <div className="bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
-          <div className="px-6 py-4 border-b border-neutral-800">
-            <h2 className="text-xl font-semibold">All Members</h2>
+        <div className="bg-white/[0.02] rounded-xl border border-white/[0.05] overflow-hidden">
+          <div className="px-6 py-4 border-b border-white/[0.05]">
+            <h2 className="text-lg font-medium">All Members</h2>
           </div>
 
-          <div className="divide-y divide-neutral-800">
+          <div className="divide-y divide-white/[0.05]">
             {data.members.map((member) => (
               <div
                 key={member.id}
-                className="px-6 py-4 hover:bg-neutral-800/50 transition-colors"
+                className="px-6 py-5 hover:bg-white/[0.01] transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
@@ -232,32 +280,50 @@ const MembersPage = () => {
                     </div>
 
                     <div>
-                      <h3 className="text-lg font-medium text-white">
+                      <h3 className="text-base font-medium text-white">
                         {member.user.name}
                       </h3>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-white/40 text-sm">
                         {member.user.email}
                       </p>
-                      {member.department && (
-                        <p className="text-blue-400 text-xs">
-                          Dept: {member.department.name}
-                        </p>
-                      )}
+                      <div className="flex items-center gap-3 mt-1">
+                        {member.department ? (
+                          <div className="flex items-center gap-1">
+                            <Building2 className="h-3 w-3 text-blue-400" />
+                            <span className="text-blue-400 text-xs">
+                              {member.department.name}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-white/20 text-xs">
+                            No department
+                          </span>
+                        )}
+                        <span className="text-white/20">•</span>
+                        <span className="text-white/40 text-xs">
+                          Joined {formatDate(member.joinedAt)}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-3">
+                    {/* Role Display/Edit */}
                     <div className="text-right">
                       {editingMember === member.id ? (
                         <div className="flex items-center space-x-2">
                           <select
                             value={selectedRole}
                             onChange={(e) => setSelectedRole(e.target.value)}
-                            className="px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-sm"
+                            className="px-3 py-1 bg-white/[0.05] border border-white/[0.1] rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-white/20"
                           >
                             <option value="">Select Role</option>
                             {roles.map((role) => (
-                              <option key={role} value={role}>
+                              <option
+                                key={role}
+                                value={role}
+                                style={{ backgroundColor: "#18181b" }}
+                              >
                                 {role}
                               </option>
                             ))}
@@ -267,7 +333,7 @@ const MembersPage = () => {
                               handleRoleUpdate(member.user.id, selectedRole)
                             }
                             disabled={!selectedRole}
-                            className="p-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 rounded transition-colors"
+                            className="p-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 disabled:bg-white/5 disabled:text-white/20 text-emerald-400 rounded-lg transition-colors"
                           >
                             <Save className="h-4 w-4" />
                           </button>
@@ -276,51 +342,107 @@ const MembersPage = () => {
                               setEditingMember(null);
                               setSelectedRole("");
                             }}
-                            className="p-1 bg-gray-600 hover:bg-gray-700 rounded transition-colors"
+                            className="p-1.5 bg-white/5 hover:bg-white/10 text-white/60 rounded-lg transition-colors"
                           >
                             <X className="h-4 w-4" />
                           </button>
                         </div>
                       ) : (
-                        <>
-                          <span
-                            className={`px-2 py-1 rounded text-xs font-medium border ${getRoleBadgeColor(
-                              member.role
-                            )}`}
-                          >
-                            {member.role}
-                          </span>
-                          <p className="text-gray-500 text-xs mt-1">
-                            Joined {formatDate(member.joinedAt)}
-                          </p>
-                        </>
+                        <span
+                          className={`px-3 py-1 rounded-lg text-xs font-medium border ${getRoleBadgeColor(
+                            member.role
+                          )}`}
+                        >
+                          {member.role}
+                        </span>
                       )}
                     </div>
 
-                    {data.canManage && editingMember !== member.id && (
+                    {/* Department Management */}
+                    {data.canManage && showAddToDept === member.id && (
                       <div className="flex items-center space-x-2">
+                        <select
+                          value={selectedDepartment}
+                          onChange={(e) =>
+                            setSelectedDepartment(e.target.value)
+                          }
+                          className="px-3 py-1 bg-white/[0.05] border border-white/[0.1] rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-white/20"
+                        >
+                          <option value="">Select Department</option>
+                          {data.departments?.map((dept) => (
+                            <option
+                              key={dept.id}
+                              value={dept.id}
+                              style={{ backgroundColor: "#18181b" }}
+                            >
+                              {dept.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() =>
+                            handleDepartmentUpdate(
+                              member.user.id,
+                              selectedDepartment
+                            )
+                          }
+                          disabled={!selectedDepartment}
+                          className="p-1.5 bg-blue-500/20 hover:bg-blue-500/30 disabled:bg-white/5 disabled:text-white/20 text-blue-400 rounded-lg transition-colors"
+                        >
+                          <Save className="h-4 w-4" />
+                        </button>
                         <button
                           onClick={() => {
-                            setEditingMember(member.id);
-                            setSelectedRole(member.role);
+                            setShowAddToDept(null);
+                            setSelectedDepartment("");
                           }}
-                          className="p-2 bg-purple-600 hover:bg-purple-700 rounded transition-colors"
-                          title="Edit role"
+                          className="p-1.5 bg-white/5 hover:bg-white/10 text-white/60 rounded-lg transition-colors"
                         >
-                          <Edit className="h-4 w-4" />
+                          <X className="h-4 w-4" />
                         </button>
-
-                        {member.role !== "PRESIDENT" && (
-                          <button
-                            onClick={() => handleRemoveMember(member.user.id)}
-                            className="p-2 bg-red-600 hover:bg-red-700 rounded transition-colors"
-                            title="Remove member"
-                          >
-                            <UserX className="h-4 w-4" />
-                          </button>
-                        )}
                       </div>
                     )}
+
+                    {/* Action Buttons */}
+                    {data.canManage &&
+                      editingMember !== member.id &&
+                      showAddToDept !== member.id && (
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => {
+                              setEditingMember(member.id);
+                              setSelectedRole(member.role);
+                            }}
+                            className="p-1.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/80 rounded-lg transition-colors"
+                            title="Edit role"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setShowAddToDept(member.id);
+                              setSelectedDepartment(
+                                member.department?.id || ""
+                              );
+                            }}
+                            className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors"
+                            title="Manage department"
+                          >
+                            <UserPlus className="h-4 w-4" />
+                          </button>
+
+                          {member.role !== "PRESIDENT" && (
+                            <button
+                              onClick={() => handleRemoveMember(member.user.id)}
+                              className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+                              title="Remove member"
+                            >
+                              <UserX className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      )}
                   </div>
                 </div>
               </div>
@@ -329,8 +451,8 @@ const MembersPage = () => {
 
           {data.members.length === 0 && (
             <div className="px-6 py-12 text-center">
-              <Users className="mx-auto h-12 w-12 text-gray-500 mb-4" />
-              <p className="text-gray-400">No members found</p>
+              <Users className="mx-auto h-12 w-12 text-white/20 mb-4" />
+              <p className="text-white/40">No members found</p>
             </div>
           )}
         </div>
