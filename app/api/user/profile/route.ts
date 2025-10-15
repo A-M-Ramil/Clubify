@@ -129,9 +129,7 @@ export async function PUT(request: NextRequest) {
               },
             },
           },
-          orderBy: {
-            createdAt: "desc",
-          },
+
           take: 10, // Limit to recent RSVPs
         },
         sponsorships: true,
