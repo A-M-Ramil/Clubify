@@ -1,13 +1,24 @@
 // app/sign-in/sso-callback/page.tsx
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 
 export default function SSOCallback() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
+  const [loadingMessage, setLoadingMessage] = useState("Signing you in...");
+
+  useEffect(() => {
+    // Check for pending role only on client side
+    if (typeof window !== "undefined") {
+      const pendingRole = sessionStorage.getItem("pendingUserRole");
+      if (pendingRole) {
+        setLoadingMessage("Setting up your account...");
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -16,10 +27,13 @@ export default function SSOCallback() {
       if (user) {
         try {
           // Get the role from sessionStorage if it was stored before OAuth (for sign-up)
-          const pendingRole = sessionStorage.getItem("pendingUserRole");
+          const pendingRole =
+            typeof window !== "undefined"
+              ? sessionStorage.getItem("pendingUserRole")
+              : null;
 
           // Clear the stored role
-          if (pendingRole) {
+          if (pendingRole && typeof window !== "undefined") {
             sessionStorage.removeItem("pendingUserRole");
           }
 
@@ -72,9 +86,7 @@ export default function SSOCallback() {
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
         <p className="text-neutral-600 dark:text-neutral-300">
-          {sessionStorage.getItem("pendingUserRole")
-            ? "Setting up your account..."
-            : "Signing you in..."}
+          {loadingMessage}
         </p>
       </div>
     </div>
